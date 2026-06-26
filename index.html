@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Binary Trading Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0b0e14; color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* Header */
+        header { background: #131722; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2e39; height: 60px; }
+        .logo-section { display: flex; align-items: center; gap: 15px; }
+        .market-select { background: #1c2030; color: #fff; border: 1px solid #363c4e; padding: 6px 12px; border-radius: 4px; cursor: pointer; outline: none; }
+        .balance-box { background: #1c2030; border: 1px solid #00b574; padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 10px; }
+        .balance-amount { color: #00b574; font-weight: bold; }
+        
+        /* Main Layout */
+        .main-container { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
+        .sidebar { width: 70px; background: #131722; border-right: 1px solid #2a2e39; display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 25px; }
+        .side-btn { background: none; border: none; color: #787b86; font-size: 20px; cursor: pointer; width: 100%; padding: 10px 0; transition: 0.3s; text-align: center; }
+        .side-btn.active, .side-btn:hover { color: #00b574; }
+        
+        .screen-content { flex: 1; background: #0b0e14; position: relative; overflow-y: auto; }
+        .app-screen { display: none; padding: 20px; height: 100%; }
+        .app-screen.active { display: block; }
+
+        /* Trading Dashboard */
+        .trading-layout { display: flex; height: 100%; gap: 15px; padding: 5px; }
+        .chart-container-block { flex: 1; display: flex; flex-direction: column; background: #131722; border-radius: 8px; border: 1px solid #2a2e39; padding: 10px; position: relative; }
+        .chart-area { flex: 3; width: 100%; }
+        .rsi-area { flex: 1; width: 100%; border-top: 1px solid #2a2e39; margin-top: 5px; }
+        
+        /* Active Trade Overlay Tag on Chart */
+        .trade-marker { position: absolute; right: 60px; background: #2196f3; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: none; z-index: 10; align-items: center; gap: 5px; box-shadow: 0 0 10px rgba(33, 150, 243, 0.5); }
+        .trade-marker.up { background: #00b574; box-shadow: 0 0 10px rgba(0, 181, 116, 0.5); }
+        .trade-marker.down { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+
+        .control-panel { width: 280px; background: #131722; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 15px; border: 1px solid #2a2e39; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { color: #787b86; font-size: 12px; }
+        .input-group input { background: #1c2030; border: 1px solid #363c4e; padding: 10px; color: #fff; border-radius: 4px; font-size: 16px; outline: none; }
+        
+        .payout-row { display: flex; justify-content: space-between; font-size: 14px; color: #787b86; margin: 5px 0; }
+        .payout-amt { color: #fff; font-weight: bold; }
+
+        .trade-btn { width: 100%; padding: 15px; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; color: #fff; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-up { background: #00b574; } .btn-up:hover { background: #029e66; }
+        .btn-down { background: #ef4444; } .btn-down:hover { background: #d93838; }
+        .btn-sub-text { font-size: 12px; font-weight: normal; opacity: 0.9; margin-top: 2px; }
+
+        /* Profile & Finance Cards */
+        .profile-container { max-width: 600px; margin: 0 auto; background: #131722; border-radius: 8px; border: 1px solid #2a2e39; overflow: hidden; }
+        .bg-banner { height: 140px; background: linear-gradient(45deg, #1f4037, #99f2c8); background-size: cover; background-position: center; position: relative; }
+        .profile-avatar-wrapper { width: 90px; height: 90px; border-radius: 50%; border: 4px solid #131722; position: absolute; bottom: -45px; left: 30px; background: #2a2e39; background-size: cover; background-position: center; }
+        .profile-info { padding: 60px 30px 30px 30px; }
+        .file-upload-btn { background: #1c2030; border: 1px solid #363c4e; padding: 6px 12px; border-radius: 4px; color: #fff; cursor: pointer; display: inline-block; margin-top: 10px; font-size: 12px; }
+        .profile-fields { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
+
+        .finance-card { max-width: 500px; margin: 0 auto; background: #131722; border-radius: 8px; padding: 20px; border: 1px solid #2a2e39; }
+        .method-list { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .method-item { background: #1c2030; border: 1px solid #363c4e; padding: 15px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .method-item:hover { border-color: #00b574; background: #22273a; }
+        .method-left { display: flex; align-items: center; gap: 15px; font-weight: 500; }
+        .method-icon { width: 35px; height: 35px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; background: #eef2f7; color: #333;}
+        
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: #131722; border: 1px solid #363c4e; border-radius: 8px; padding: 25px; width: 90%; max-width: 400px; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 15px; color: #787b86; cursor: pointer; font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-section">
+            <h3 style="color: #00b574;"><i class="fa-solid fa-bolt"></i> PRESTIGE CLONE</h3>
+            <select class="market-select" id="marketSelector" onchange="changeMarket(this.value)">
+                <option value="EUR/USD" data-rate="1.82">EUR/USD (82%)</option>
+                <option value="Crypto IDX" data-rate="1.85">Crypto IDX (85%)</option>
+                <option value="GBP/USD" data-rate="1.80">GBP/USD (80%)</option>
+                <option value="AUD/CAD" data-rate="1.78">AUD/CAD (78%)</option>
+                <option value="USD/JPY" data-rate="1.81">USD/JPY (81%)</option>
+                <option value="BTC/USDT" data-rate="1.87">BTC/USDT (87%)</option>
+                <option value="ETH/USDT" data-rate="1.84">ETH/USDT (84%)</option>
+                <option value="LTC/USD" data-rate="1.75">LTC/USD (75%)</option>
+                <option value="Gold Spot" data-rate="1.88">Gold Spot (88%)</option>
+                <option value="Apple IDX" data-rate="1.82">Apple IDX (82%)</option>
+            </select>
+        </div>
+        <div class="balance-box">
+            <i class="fa-solid fa-wallet"></i>
+            <span>Demo Account:</span>
+            <span class="balance-amount" id="accountBalance">$100.00</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <button class="side-btn active" onclick="switchScreen('trading-screen', this)"><i class="fa-solid fa-chart-line"></i></button>
+            <button class="side-btn" onclick="switchScreen('profile-screen', this)"><i class="fa-solid fa-user"></i></button>
+            <button class="side-btn" onclick="switchScreen('deposit-screen', this)"><i class="fa-solid fa-wallet"></i></button>
+            <button class="side-btn" onclick="switchScreen('withdraw-screen', this)"><i class="fa-solid fa-money-bill-transfer"></i></button>
+        </div>
+
+        <div class="screen-content">
+            
+            <div id="trading-screen" class="app-screen active">
+                <div class="trading-layout">
+                    <div class="chart-container-block">
+                        <div class="trade-marker" id="chartTradeTag">
+                            <span id="tagDirIcon"></span> $<span id="tagAmount">0</span>
+                        </div>
+                        <div class="chart-area" id="mainChart"></div>
+                        <div class="rsi-area" id="rsiChart"></div>
+                    </div>
+                    
+                    <div class="control-panel">
+                        <h4 id="panelMarketName">EUR/USD</h4>
+                        <div class="input-group">
+                            <label>Amount ($)</label>
+                            <input type="number" id="tradeAmount" value="1" min="1" oninput="calculatePayout()">
+                        </div>
+                        <div class="input-group">
+                            <label>Expiration Time</label>
+                            <input type="text" value="00:05 (5 Sec)" disabled style="opacity: 0.6;">
+                        </div>
+                        
+                        <div style="margin: 10px 0;">
+                            <div class="payout-row"><span>Investment:</span><span class="payout-amt" id="rowInvest">$1.00</span></div>
+                            <div class="payout-row"><span>Payout (82%):</span><span class="payout-amt" id="rowPayout" style="color:#00b574;">$1.82</span></div>
+                        </div>
+
+                        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+                            <button class="trade-btn btn-up" onclick="placeTrade('UP')">
+                                <span><i class="fa-solid fa-chevron-up"></i> HIGHER</span>
+                                <span class="btn-sub-text" id="btnUpPayout">$1.82</span>
+                            </button>
+                            <button class="trade-btn btn-down" onclick="placeTrade('DOWN')">
+                                <span><i class="fa-solid fa-chevron-down"></i> LOWER</span>
+                                <span class="btn-sub-text" id="btnDownPayout">$1.82</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="profile-screen" class="app-screen">
+                <div class="profile-container">
+                    <div class="bg-banner" id="profileBg" style="background-image: url('https://picsum.photos/700/250');">
+                        <label class="file-upload-btn" style="position: absolute; right: 10px; top: 10px;">
+                            <input type="file" accept="image/*" onchange="uploadPhoto(this, 'bg')" style="display:none;"> Change Cover
+                        </label>
+                        <div class="profile-avatar-wrapper" id="profileAvatar" style="background-image: url('https://picsum.photos/150');"></div>
+                    </div>
+                    <div class="profile-info">
+                        <label class="file-upload-btn">
+                            <input type="file" accept="image/*" onchange="uploadPhoto(this, 'avatar')" style="display:none;"> Change Photo
+                        </label>
+                        <div class="profile-fields">
+                            <p><strong>UID:</strong> <span id="profId">#1029384</span></p>
+                            <div class="input-group"><label>Profile Name</label><input type="text" value="Expert Trader"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="deposit-screen" class="app-screen">
+                <div class="finance-card">
+                    <h3>Deposit Methods</h3><br>
+                    <div class="method-list">
+                        <div class="method-item" onclick="openGateModal('Deposit', 'UPI')"><div class="method-left"><div class="method-icon" style="color:#2c3e50;">UPI</div><span>Pay via UPI Apps</span></div><i class="fa-solid fa-chevron-right"></i></div>
+                        <div class="method-item" onclick="openGateModal('Deposit', 'PhonePe')"><div class="method-left"><div class="method-icon" style="color:#5f259f;">PE</div><span>PhonePe Wallet</span></div><i class="fa-solid fa-chevron-right"></i></div>
+                        <div class="method-item" onclick="openGateModal('Deposit', 'USDT (TRC20)')"><div class="method-left"><div class="method-icon" style="background:#f39c12; color:#fff;"><i class="fa-solid fa-coins"></i></div><span>Tether Crypto</span></div><i class="fa-solid fa-chevron-right"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="withdraw-screen" class="app-screen">
+                <div class="finance-card">
+                    <h3>Withdraw Funds</h3><br>
+                    <div class="method-list">
+                        <div class="method-item" onclick="openGateModal('Withdraw', 'UPI ID')"><div class="method-left"><div class="method-icon" style="color:#e74c3c;">UPI</div><span>Withdraw to UPI ID</span></div><i class="fa-solid fa-chevron-right"></i></div>
+                        <div class="method-item" onclick="openGateModal('Withdraw', 'Crypto Wallet')"><div class="method-left"><div class="method-icon" style="background:#2ecc71; color:#fff;"><i class="fa-solid fa-wallet"></i></div><span>USDT Wallet (TRC20)</span></div><i class="fa-solid fa-chevron-right"></i></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal" id="gateModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeGateModal()">&times;</span>
+            <h3 id="modalTitle">Transaction</h3><br>
+            <div class="input-group"><label id="modalInputLabel">Details</label><input type="text" id="modalTargetAddress" placeholder="Enter details..."></div><br>
+            <div class="input-group"><label>Amount ($)</label><input type="number" id="modalAmount" value="10"></div><br>
+            <button class="trade-btn btn-up" onclick="submitFinanceAction()" style="padding:12px;">Submit Request</button>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio Context Setup for beep sounds
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(frequency, duration, type="sine") {
+            try {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = type;
+                oscillator.frequency.value = frequency;
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        let balance = 100.00;
+        let currentMarket = "EUR/USD";
+        let currentProfitRate = 1.82; 
+        let mainChart = null, rsiChart = null;
+        let chartData = [], rsiData = [];
+        let lastPrice = 1.1400;
+
+        function initData() {
+            chartData = []; rsiData = [];
+            let time = new Date();
+            time.setMinutes(time.getMinutes() - 30);
+            let base = 1.1400;
+
+            for(let i=0; i<30; i++) {
+                let o = base;
+                let c = o + (Math.random() - 0.5) * 0.0010;
+                let h = Math.max(o, c) + Math.random() * 0.0004;
+                let l = Math.min(o, c) - Math.random() * 0.0004;
+                let t = new Date(time.getTime() + i * 10000);
+                
+                chartData.push({ x: t, y: [o.toFixed(5), h.toFixed(5), l.toFixed(5), c.toFixed(5)] });
+                rsiData.push({ x: t, y: Math.floor(Math.random() * 40) + 30 }); // Fake dynamic RSI value
+                base = c;
+            }
+            lastPrice = base;
+        }
+
+        function renderCharts() {
+            initData();
+            
+            const mainOptions = {
+                series: [{ data: chartData }],
+                chart: { type: 'candlestick', height: '100%', id: 'main', toolbar: { show: false }, animations: { enabled: false } },
+                xaxis: { type: 'datetime', labels: { show: false } },
+                yaxis: { labels: { style: { colors: '#787b86' } }, opposite: true },
+                plotOptions: { candlestick: { colors: { upward: '#00b574', downward: '#ef4444' } } },
+                grid: { borderColor: '#1f222d' }
+            };
+
+            const rsiOptions = {
+                series: [{ name: 'RSI (14)', data: rsiData }],
+                chart: { type: 'line', height: '100%', id: 'rsi', toolbar: { show: false }, animations: { enabled: false } },
+                stroke: { width: 2, colors: ['#e67e22'] },
+                xaxis: { type: 'datetime', labels: { style: { colors: '#787b86' } } },
+                yaxis: { min: 0, max: 100, tickAmount: 2, labels: { style: { colors: '#787b86' } }, opposite: true },
+                grid: { borderColor: '#1f222d' },
+                annotations: { yaxis: [{ y: 70, borderColor: '#ef4444', label: { text: '70', style: { color: '#fff', background: '#ef4444' } } }, { y: 30, borderColor: '#00b574', label: { text: '30', style: { color: '#fff', background: '#00b574' } } }] }
+            };
+
+            mainChart = new ApexCharts(document.querySelector("#mainChart"), mainOptions);
+            rsiChart = new ApexCharts(document.querySelector("#rsiChart"), rsiOptions);
+            mainChart.render();
+            rsiChart.render();
+        }
+
+        // Live Real-Time Tick Update Loop
+        setInterval(() => {
+            if(!mainChart) return;
+            let o = lastPrice;
+            let c = o + (Math.random() - 0.5) * 0.0008;
+            let h = Math.max(o, c) + Math.random() * 0.0003;
+            let l = Math.min(o, c) - Math.random() * 0.0003;
+            lastPrice = c;
+
+            let t = new Date();
+            chartData.push({ x: t, y: [o.toFixed(5), h.toFixed(5), l.toFixed(5), c.toFixed(5)] });
+            // Sync Live Indicator Feature (RSI recalculates based on price movement)
+            let lastRsi = rsiData[rsiData.length-1].y;
+            let nextRsi = lastRsi + (c > o ? 3 : -3) + (Math.random() - 0.5) * 4;
+            nextRsi = Math.max(15, Math.min(85, nextRsi));
+            rsiData.push({ x: t, y: Math.floor(nextRsi) });
+
+            if(chartData.length > 30) { chartData.shift(); rsiData.shift(); }
+
+            mainChart.updateSeries([{ data: chartData }]);
+            rsiChart.updateSeries([{ data: rsiData }]);
+
+            // Dynamically reposition active trade visual marker overlay on chart
+            let marker = document.getElementById('chartTradeTag');
+            if(marker.style.display === 'flex') {
+                let chartH = document.querySelector("#mainChart").clientHeight;
+                let normalizedY = ((c - 1.1350) / 0.0100) * chartH; // Approximation calculation for position matching
+                let targetTop = Math.max(40, Math.min(chartH - 40, chartH - normalizedY));
+                marker.style.top = `${targetTop}px`;
+            }
+        }, 1500);
+
+        function changeMarket(val) {
+            currentMarket = val;
+            let selector = document.getElementById('marketSelector');
+            currentProfitRate = parseFloat(selector.opti
